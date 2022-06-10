@@ -40,6 +40,17 @@ process* initialize_process(char* commande,int cpt_espace,ssize_t taille){
 	return p;
 }
 
+job* initialize_job(char* commande,process* p){
+	job* job=malloc(sizeof(job));
+	job->next=NULL;
+	job->command=commande;
+	job->first_process=p;
+	job->stdin=STDIN_FILENO;
+	job->stdout=STDOUT_FILENO;
+	job->stderr=STDERR_FILENO;
+	return (job);
+}
+
 /* Return true if all processes in the job have stopped or completed.  */
 int
 job_is_stopped (job *j)
@@ -386,6 +397,7 @@ void alloc_process(process* p,char* commande,ssize_t taille){
 
 int main(int argc,char** argv){	
 	init_shell();
+	job *j=first_job;
 	while(1){
 		char* commande="";
 		size_t taille_buf=0;
@@ -403,15 +415,8 @@ int main(int argc,char** argv){
 			if (strcmp("exit",p->argv[0])==0){
 				return 0;
 			}
-		char** av = p->argv;
-		first_job=malloc(sizeof(job));
-		first_job->next=NULL;
-		first_job->command=commande;
-		first_job->first_process=p;
-		first_job->stdin=STDIN_FILENO;
-		first_job->stdout=STDOUT_FILENO;
-		first_job->stderr=STDERR_FILENO;
-		launch_job(first_job,1);
+		j=initialize_job(commande,p);
+		launch_job(j,1);
 	
 		int cpt=0;
 		for(int i=0;i<taille;i++){
@@ -422,9 +427,7 @@ int main(int argc,char** argv){
 			}
 		}
 		free(commande);
-		free(p->argv);
-		free(p);
-		free(first_job);
+		j=j->next;
 	}
 	return 0;
 }
