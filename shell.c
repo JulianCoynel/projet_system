@@ -149,6 +149,7 @@ void launch_process (process *p, pid_t pgid,int infile, int outfile, int errfile
 	}
 
 	/* Exec the new process.  Make sure we exit.  */
+	printf("print test %s \n",p->argv[0]);
 	execvp (p->argv[0], p->argv);
 	perror ("execvp");
 	exit (1);
@@ -413,9 +414,11 @@ int main(int argc,char** argv){
 		}
 		process* p=initialize_process(commande,cpt_espace,taille);
 		printf("nb bloc: %d\n",cpt_espace);
-			if (strcmp("exit",p->argv[0])==0){
-				return 0;
-			}
+
+		if (strcmp("exit",p->argv[0])==0){
+			exit(0);
+		}
+
 		j=initialize_job(commande,p);
 		launch_job(j,1);
 	
