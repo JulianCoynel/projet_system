@@ -401,7 +401,6 @@ int main(int argc,char** argv){
 				cpt_espace++;
 			}
 		}
-
 		process* p=initialize_process(commande,cpt_espace,taille);
 		printf("nb bloc: %d\n",cpt_espace);
 			if (strcmp("exit",p->argv[0])==0){
