@@ -3,14 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 /* Keep track of attributes of the shell.  */
-
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <termios.h>
 #include <unistd.h>
 #include <errno.h>
 #include <ctype.h>
-
 #include <signal.h>
 
 pid_t shell_pgid;
@@ -387,7 +385,6 @@ void alloc_process(process* p,char* commande,ssize_t taille){
 }
 
 int main(int argc,char** argv){	
-	
 	init_shell();
 	while(1){
 		char* commande="";
@@ -411,15 +408,10 @@ int main(int argc,char** argv){
 		first_job->next=NULL;
 		first_job->command=commande;
 		first_job->first_process=p;
-		//first_job->pgid=shell_pgid;
-		//first_job->notified=1;
-		//first_job->tmodes=shell_tmodes;
 		first_job->stdin=STDIN_FILENO;
 		first_job->stdout=STDOUT_FILENO;
 		first_job->stderr=STDERR_FILENO;
-		//first_job->next=find_job(shell_pgid);
 		launch_job(first_job,1);
-	
 	
 		int cpt=0;
 		for(int i=0;i<taille;i++){
