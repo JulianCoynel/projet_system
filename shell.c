@@ -426,10 +426,13 @@ int main(int argc,char** argv){
       			perror("getcwd() error");
        			return 1;
    			}
-			chdir(strcat(cwd,p->argv[1]));
+			strcat(cwd,p->argv[1]);
+			printf("cwd : %s",cwd);
+			chdir(cwd);
 		}else{
 			j=initialize_job(commande,p);
 			launch_job(j,1);
+			j=j->next;
 		}
 	
 		int cpt=0;
@@ -441,7 +444,7 @@ int main(int argc,char** argv){
 			}
 		}
 		free(commande);
-		j=j->next;
+		
 	}
 	return 0;
 }
