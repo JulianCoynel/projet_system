@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <signal.h>
+#include <limits.h>
 
 pid_t shell_pgid;
 struct termios shell_tmodes;
@@ -417,10 +418,19 @@ int main(int argc,char** argv){
 
 		if (strcmp("exit",p->argv[0])==0){
 			exit(0);
+		}else if (strcmp("cd",p->argv[0])==0){
+			char cwd[PATH_MAX];
+   			if (getcwd(cwd, sizeof(cwd)) != NULL) {
+       			printf("Current working dir: %s\n", cwd);
+   			} else {
+      			perror("getcwd() error");
+       			return 1;
+   			}
+			chdir(strcat(cwd,p->argv[1]));
+		}else{
+			j=initialize_job(commande,p);
+			launch_job(j,1);
 		}
-
-		j=initialize_job(commande,p);
-		launch_job(j,1);
 	
 		int cpt=0;
 		for(int i=0;i<taille;i++){
