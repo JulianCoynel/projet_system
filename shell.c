@@ -393,7 +393,7 @@ void alloc_process(process* p,char* commande,ssize_t taille){
 	free(s);
 }
 
-void test_chevron(char** argv,int taille,int* t_entree,int* t_sortie){
+void test_chevron(char** argv,int taille,int* t_entree,int* t_sortie,int* t_sortie_append){
 	char *s;
 	s=malloc(500*sizeof(char));
 	for(int i=1;i<taille-1;i++){
@@ -404,13 +404,16 @@ void test_chevron(char** argv,int taille,int* t_entree,int* t_sortie){
 		if(strcmp(">",s)==0){
 			*t_sortie=i;
 		}
+		if(strcmp(">>",s)==0){
+			*t_sortie_append=i;
+		}
 		free(s);
 		s=malloc(500*sizeof(char));
 	}
 	free(s);
 }
 
-int main(int argc,char** argv){	
+int main(int argc,char** argv) {
 	init_shell();
 	job* j=first_job;
 	while(1){
@@ -437,12 +440,13 @@ int main(int argc,char** argv){
 			j=malloc(sizeof(job));
 			int t_entree=0;
 			int t_sortie=0;
-			test_chevron(p->argv,cpt_espace,&t_entree,&t_sortie);
+			int t_sortie_append=0;
+			test_chevron(p->argv,cpt_espace,&t_entree,&t_sortie,&t_sortie_append);
 			printf("t_entree: %d, t_sortie: %d\n",t_entree,t_sortie);
-			if (t_entree==0 && t_sortie==0){
+			if (t_entree==0 && t_sortie==0 && t_sortie_append==0){
 				initialize_job(j,commande,p,STDIN_FILENO,STDOUT_FILENO);
 			}
-			else if(t_sortie==0){
+			else if(t_sortie==0 && t_sortie_append==0){
 				printf("e\n");
 				p->argv[t_entree]=NULL;
 				initialize_job(j,commande,p,open(p->argv[t_entree+1],O_RDONLY),STDOUT_FILENO);
@@ -450,18 +454,37 @@ int main(int argc,char** argv){
 			else if(t_entree==0){
 				printf("s\n");
 				p->argv[t_sortie]=NULL;
-				initialize_job(j,commande,p,STDIN_FILENO,open(p->argv[t_sortie+1],O_WRONLY));
-			}
-			else{
-				int i=0;
-				if(t_entree > t_sortie){
-					i=t_sortie;
+				if(t_sortie_append==0){
+					initialize_job(j,commande,p,STDIN_FILENO,open(p->argv[t_sortie+1],O_WRONLY | O_CREAT,0644));
 				}
 				else{
-					i=t_entree;
+					printf("a\n");
+					initialize_job(j,commande,p,STDIN_FILENO,open(p->argv[t_sortie_append+1], O_WRONLY | O_APPEND ));
 				}
-				p->argv[i]=NULL;
-				initialize_job(j,commande,p,open(p->argv[t_entree+1],O_RDONLY),open(p->argv[t_sortie+1],O_WRONLY));
+			}
+			else{
+				if(t_sortie_append==0){
+					int i=0;
+					if(t_entree > t_sortie){
+						i=t_sortie;
+					}
+					else{
+						i=t_entree;
+					}
+					p->argv[i]=NULL;
+					initialize_job(j,commande,p,open(p->argv[t_entree+1],O_RDONLY),open(p->argv[t_sortie+1],O_WRONLY | O_CREAT,0644));
+				}
+				else{
+					int i=0;
+					if(t_entree > t_sortie_append){
+						i=t_sortie_append;
+					}
+					else{
+						i=t_entree;
+					}
+					p->argv[i]=NULL;
+					initialize_job(j,commande,p,open(p->argv[t_entree+1],O_RDONLY),open(p->argv[t_sortie_append+1], O_WRONLY | O_APPEND));
+				}
 			}
 			launch_job(j,1);
 			j=j->next;
