@@ -34,7 +34,6 @@ find_job (pid_t pgid)
 }
 
 void initialize_process(process* p,char* commande,int cpt_espace,ssize_t taille){
-	process*p=malloc(sizeof(process));
 	p->next=NULL;
 	p->argv=malloc(1+cpt_espace*sizeof(char*));
 	alloc_process(p,commande,taille);
@@ -394,6 +393,28 @@ void alloc_process(process* p,char* commande,ssize_t taille){
 	free(s);
 }
 
+int test_chevron_entree(char** argv){
+	char *s;
+	for(int i=1;argv[i]==NULL;i++){
+		s=argv[i];
+		if(strcmp("<",s)==0){
+			return i;
+		}
+	}
+	return 0;
+}
+
+int test_chevron_sortie(char** argv){
+	        char *s;
+		for(int i=1;argv[i]==NULL;i++){
+		s=argv[i];
+		if(strcmp(">",s)==0){
+			return i;
+		}
+	}
+	return 0;
+}
+
 int main(int argc,char** argv){	
 	init_shell();
 	job* j=first_job;
@@ -419,7 +440,20 @@ int main(int argc,char** argv){
 			chdir(p->argv[1]);
 		}else{
 			j=malloc(sizeof(job));
-			initialize_job(j,commande,p,STDIN_FILENO,STDOUT_FILENO);
+			int t_entree=test_chevron_entree(p->argv);
+			int t_sortie=test_chevron_sortie(p->argv);
+			if (t_entree==0 && t_sortie==0){
+				initialize_job(j,commande,p,STDIN_FILENO,STDOUT_FILENO);
+			}
+			else if(t_sortie==0){
+				initialize_job(j,commande,p,open(p->argv[t_entree+1],O_RDONLY),STDOUT_FILENO);
+			}
+			else if(t_entree==0){
+				initialize_job(j,commande,p,STDIN_FILENO,open(p->argv[t_sortie+1],O_WRONLY));
+			}
+			else{
+				initialize_job(j,commande,p,open(p->argv[t_entree+1],O_RDONLY),open(p->argv[t_sortie+1],O_WRONLY));
+			}
 			launch_job(j,1);
 			j=j->next;
 		}
