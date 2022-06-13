@@ -33,13 +33,12 @@ find_job (pid_t pgid)
 	      return NULL;
 }
 
-process* initialize_process(char* commande,int cpt_espace,ssize_t taille){
+void initialize_process(process* p,char* commande,int cpt_espace,ssize_t taille){
 	process*p=malloc(sizeof(process));
 	p->next=NULL;
 	p->argv=malloc(1+cpt_espace*sizeof(char*));
 	alloc_process(p,commande,taille);
 	p->argv[cpt_espace]=NULL;
-	return p;
 }
 
 void initialize_job(job* job,char* commande,process* p,int stdin,int stdout){
@@ -49,7 +48,7 @@ void initialize_job(job* job,char* commande,process* p,int stdin,int stdout){
 	job->stdin=stdin;
 	job->stdout=stdout;
 	job->stderr=STDERR_FILENO;
-	TDOUT_FILENO
+}
 
 /* Return true if all processes in the job have stopped or completed.  */
 int
@@ -410,7 +409,8 @@ int main(int argc,char** argv){
 				cpt_espace++;
 			}
 		}
-		process* p=initialize_process(commande,cpt_espace,taille);
+		process* p=malloc(sizeof(process));
+		initialize_process(p,commande,cpt_espace,taille);
 		printf("nb bloc: %d\n",cpt_espace);
 
 		if (strcmp("exit",p->argv[0])==0){
