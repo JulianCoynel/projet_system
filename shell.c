@@ -393,36 +393,21 @@ void alloc_process(process* p,char* commande,ssize_t taille){
 	free(s);
 }
 
-int test_chevron_entree(char** argv,int taille){
+void test_chevron(char** argv,int taille,int* t_entree,int* t_sortie){
 	char *s;
 	s=malloc(500*sizeof(char));
-	for(int i=1;i<taille;i++){
+	for(int i=1;i<taille-1;i++){
 		strcpy(s,argv[i]);
 		if(strcmp("<",s)==0){
-			free(s);
-			return i;
+			*t_entree=i;
 		}
-		free(s);
-		s=malloc(500*sizeof(char));
-	}
-	free(s);
-	return 0;
-}
-
-int test_chevron_sortie(char** argv,int taille){
-	char *s;
-	s=malloc(500*sizeof(char));
-	for(int i=1;i<taille;i++){
-		strcpy(s,argv[i]);
 		if(strcmp(">",s)==0){
-			free(s);
-			return i;
+			*t_sortie=i;
 		}
 		free(s);
 		s=malloc(500*sizeof(char));
 	}
 	free(s);
-	return 0;
 }
 
 int main(int argc,char** argv){	
@@ -450,9 +435,9 @@ int main(int argc,char** argv){
 			chdir(p->argv[1]);
 		}else{
 			j=malloc(sizeof(job));
-			int t_entree=test_chevron_entree(p->argv,taille);
+			int t_entree=0;
 			int t_sortie=0;
-			//int t_sortie=test_chevron_sortie(p->argv,taille);
+			test_chevron(p->argv,cpt_espace,&t_entree,&t_sortie);
 			printf("t_entree: %d, t_sortie: %d\n",t_entree,t_sortie);
 			if (t_entree==0 && t_sortie==0){
 				initialize_job(j,commande,p,STDIN_FILENO,STDOUT_FILENO);
@@ -464,9 +449,18 @@ int main(int argc,char** argv){
 			}
 			else if(t_entree==0){
 				printf("s\n");
+				p->argv[t_sortie]=NULL;
 				initialize_job(j,commande,p,STDIN_FILENO,open(p->argv[t_sortie+1],O_WRONLY));
 			}
 			else{
+				int i=0;
+				if(t_entree > t_sortie){
+					i=t_sortie;
+				}
+				else{
+					i=t_entree;
+				}
+				p->argv[i]=NULL;
 				initialize_job(j,commande,p,open(p->argv[t_entree+1],O_RDONLY),open(p->argv[t_sortie+1],O_WRONLY));
 			}
 			launch_job(j,1);
