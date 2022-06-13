@@ -11,6 +11,7 @@
 #include <ctype.h>
 #include <signal.h>
 #include <limits.h>
+#include "cp.h"
 
 pid_t shell_pgid;
 struct termios shell_tmodes;
@@ -41,14 +42,14 @@ process* initialize_process(char* commande,int cpt_espace,ssize_t taille){
 	return p;
 }
 
-void initialize_job(job* job,char* commande,process* p){
+void initialize_job(job* job,char* commande,process* p,int stdin,int stdout){
 	job->next=NULL;
 	job->command=commande;
 	job->first_process=p;
-	job->stdin=STDIN_FILENO;
-	job->stdout=STDOUT_FILENO;
+	job->stdin=stdin;
+	job->stdout=stdout;
 	job->stderr=STDERR_FILENO;
-}
+	TDOUT_FILENO
 
 /* Return true if all processes in the job have stopped or completed.  */
 int
@@ -418,7 +419,7 @@ int main(int argc,char** argv){
 			chdir(p->argv[1]);
 		}else{
 			j=malloc(sizeof(job));
-			initialize_job(j,commande,p);
+			initialize_job(j,commande,p,STDIN_FILENO,STDOUT_FILENO);
 			launch_job(j,1);
 			j=j->next;
 		}
