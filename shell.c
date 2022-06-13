@@ -41,15 +41,13 @@ process* initialize_process(char* commande,int cpt_espace,ssize_t taille){
 	return p;
 }
 
-job* initialize_job(char* commande,process* p){
-	job* job=malloc(sizeof(job));
+void initialize_job(job* job,char* commande,process* p){
 	job->next=NULL;
 	job->command=commande;
 	job->first_process=p;
 	job->stdin=STDIN_FILENO;
 	job->stdout=STDOUT_FILENO;
 	job->stderr=STDERR_FILENO;
-	return (job);
 }
 
 /* Return true if all processes in the job have stopped or completed.  */
@@ -150,7 +148,6 @@ void launch_process (process *p, pid_t pgid,int infile, int outfile, int errfile
 	}
 
 	/* Exec the new process.  Make sure we exit.  */
-	printf("print test %s \n",p->argv[0]);
 	execvp (p->argv[0], p->argv);
 	perror ("execvp");
 	exit (1);
@@ -399,7 +396,7 @@ void alloc_process(process* p,char* commande,ssize_t taille){
 
 int main(int argc,char** argv){	
 	init_shell();
-	job *j=first_job;
+	job* j=first_job;
 	while(1){
 		char* commande="";
 		size_t taille_buf=0;
@@ -420,7 +417,8 @@ int main(int argc,char** argv){
 		}else if (strcmp("cd",p->argv[0])==0){
 			chdir(p->argv[1]);
 		}else{
-			j=initialize_job(commande,p);
+			j=malloc(sizeof(job));
+			initialize_job(j,commande,p);
 			launch_job(j,1);
 			j=j->next;
 		}
