@@ -398,7 +398,6 @@ void alloc_process(process* p,char* commande,ssize_t taille){
 }
 
 int main(int argc,char** argv){	
-	//oui
 	init_shell();
 	job *j=first_job;
 	while(1){
