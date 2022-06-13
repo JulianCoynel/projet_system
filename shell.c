@@ -289,7 +289,7 @@ void wait_for_job (job *j){
 	int status;
 	pid_t pid;
 	
-	do pid = waitpid (WAIT_ANY, &status, WUNTRACED);
+	do pid = waitpid (0, &status, WUNTRACED);
 	while (!mark_process_status (pid, status) && !job_is_stopped (j) && !job_is_completed (j));
 }
 
@@ -419,22 +419,12 @@ int main(int argc,char** argv){
 		if (strcmp("exit",p->argv[0])==0){
 			exit(0);
 		}else if (strcmp("cd",p->argv[0])==0){
-			char cwd[PATH_MAX];
-   			if (getcwd(cwd, sizeof(cwd)) != NULL) {
-       			printf("Current working dir: %s\n", cwd);
-   			} else {
-      			perror("getcwd() error");
-       			return 1;
-   			}
-			strcat(cwd,p->argv[1]);
-			printf("cwd : %s",cwd);
-			chdir(cwd);
+			chdir(p->argv[1]);
 		}else{
 			j=initialize_job(commande,p);
 			launch_job(j,1);
 			j=j->next;
 		}
-	
 		int cpt=0;
 		for(int i=0;i<taille;i++){
 			c=commande[i];
