@@ -473,12 +473,19 @@ void initialize_n_process(process* first,char** commandes,int cpt_commandes){
 	}
 }
 
-void exec_n_process(job* j,process* p,char** commandes,int cpt_commandes){
-	char *commande;
-	ssize_t taille;
-	int cpt_espace;
-	for(int i=0;i<cpt_commandes;i++){
-		commande=strdup(commandes[i]);
+
+int main(int argc,char** argv) {
+	init_shell();
+	job* j=first_job;
+	while(1){
+		char* commande="";
+		char** commandes=malloc(sizeof(char*));
+		size_t taille_buf=0;
+		ssize_t taille=getline(&commande,&taille_buf,stdin);
+		int cpt_commandes=coupe_pipe(commande,commandes);
+		process* p=malloc(sizeof(process));
+		initialize_n_process(p,commandes,cpt_commandes);
+		commande=strdup(commandes[0]);
 		taille=strlen(commande);
 		cpt_espace=cpt_espacef(commande,taille);
 		if (strcmp("exit",p->argv[0])==0){
@@ -539,26 +546,7 @@ void exec_n_process(job* j,process* p,char** commandes,int cpt_commandes){
 			}
 			launch_job(j,1);
 			j=j->next;
-		}
-		free(commande);
-	}
-
-
-}
-
-
-int main(int argc,char** argv) {
-	init_shell();
-	job* j=first_job;
-	while(1){
-		char* commande="";
-		char** commandes=malloc(sizeof(char*));
-		size_t taille_buf=0;
-		ssize_t taille=getline(&commande,&taille_buf,stdin);
-		int cpt_commandes=coupe_pipe(commande,commandes);
-		process* p=malloc(sizeof(process));
-		initialize_n_process(p,commandes,cpt_commandes);
-		exec_n_process(j,p,commandes,cpt_commandes);		
+		}	
 	}
 	return 0;
 }
