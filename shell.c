@@ -558,74 +558,7 @@ int main(int argc,char** argv) {
 		int cpt_commandes=coupe_pipe(commande,commandes);
 		process* p=malloc(sizeof(process));
 		initialize_n_process(p,commandes,cpt_commandes);
-		exec_n_process(j,p,commandes,cpt_commandes);
-		/*if (strcmp("exit",p->argv[0])==0){
-			exit(0);
-		}else if (strcmp("cd",p->argv[0])==0){
-			chdir(p->argv[1]);
-		}else{
-			j=malloc(sizeof(job));
-			int t_entree=0;
-			int t_sortie=0;
-			int t_sortie_append=0;
-			test_chevron(p->argv,cpt_espace,&t_entree,&t_sortie,&t_sortie_append);
-			printf("t_entree: %d, t_sortie: %d\n",t_entree,t_sortie);
-			if (t_entree==0 && t_sortie==0 && t_sortie_append==0){
-				initialize_job(j,commande,p,STDIN_FILENO,STDOUT_FILENO);
-			}
-			else if(t_sortie==0 && t_sortie_append==0){
-				printf("e\n");
-				p->argv[t_entree]=NULL;
-				initialize_job(j,commande,p,open(p->argv[t_entree+1],O_RDONLY),STDOUT_FILENO);
-			}
-			else if(t_entree==0){
-				printf("s\n");
-				p->argv[t_sortie]=NULL;
-				if(t_sortie_append==0){
-					initialize_job(j,commande,p,STDIN_FILENO,open(p->argv[t_sortie+1],O_WRONLY | O_CREAT,0644));
-				}
-				else{
-					printf("a\n");
-					initialize_job(j,commande,p,STDIN_FILENO,open(p->argv[t_sortie_append+1], O_WRONLY | O_APPEND ));
-				}
-			}
-			else{
-				if(t_sortie_append==0){
-					int i=0;
-					if(t_entree > t_sortie){
-						i=t_sortie;
-					}
-					else{
-						i=t_entree;
-					}
-					p->argv[i]=NULL;
-					initialize_job(j,commande,p,open(p->argv[t_entree+1],O_RDONLY),open(p->argv[t_sortie+1],O_WRONLY | O_CREAT,0644));
-				}
-				else{
-					int i=0;
-					if(t_entree > t_sortie_append){
-						i=t_sortie_append;
-					}
-					else{
-						i=t_entree;
-					}
-					p->argv[i]=NULL;
-					initialize_job(j,commande,p,open(p->argv[t_entree+1],O_RDONLY),open(p->argv[t_sortie_append+1], O_WRONLY | O_APPEND));
-				}
-			}
-			launch_job(j,1);
-			j=j->next;
-		}*/
-		/*int cpt=0;
-		for(int i=0;i<taille;i++){
-			c=commande[i];
-			if (isspace(c)){
-				free(p->argv[cpt]);
-				cpt++;
-			}
-		}
-		free(commande);*/
-		
+		exec_n_process(j,p,commandes,cpt_commandes);		
 	}
 	return 0;
 }
