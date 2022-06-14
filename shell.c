@@ -487,7 +487,7 @@ int main(int argc,char** argv) {
 		initialize_n_process(p,commandes,cpt_commandes);
 		commande=strdup(commandes[0]);
 		taille=strlen(commande);
-		cpt_espace=cpt_espacef(commande,taille);
+		int cpt_espace=cpt_espacef(commande,taille);
 		if (strcmp("exit",p->argv[0])==0){
 			exit(0);
 		}
