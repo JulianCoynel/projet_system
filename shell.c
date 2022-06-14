@@ -370,7 +370,9 @@ void alloc_process(process* p,char* commande,ssize_t taille){
 	int cpt2=0;
 	char c;
 	char *s;
-	s=malloc(taille_max(commande,taille)*sizeof(char));
+	int t_max=taille_max(commande,taille);
+	printf("tmax: %d\n",t_max);
+	s=malloc(t_max*sizeof(char));
 	for(int i=0;i<taille;i++){
 		c=commande[i];
 		if (isspace(c)){
@@ -379,7 +381,7 @@ void alloc_process(process* p,char* commande,ssize_t taille){
 			printf("argv[%d]: %s\n",cpt,p->argv[cpt]);
 			cpt++;
 			free(s);
-			s=malloc(taille_max(commande,taille)*sizeof(char));
+			s=malloc(t_max*sizeof(char));
 			cpt2=-1;
 			s[0]='\0';
 		}
@@ -413,26 +415,151 @@ void test_chevron(char** argv,int taille,int* t_entree,int* t_sortie,int* t_sort
 	free(s);
 }
 
+
+int coupe_pipe(char* commande,char **commandes){
+	char* pipe=strchr(commande,'|');
+	int cpt=1;
+	if(pipe!=NULL){
+		char* s=strdup(pipe+2);
+		printf("commande %d: %s,%s\n",cpt-1,commande,s);
+		while(pipe!=NULL){
+			*pipe='\0';
+			cpt++;
+			commandes=realloc(commandes,cpt*sizeof(char*));
+			printf("commande %d: %s,%s\n",cpt-2,commande,s);
+			commandes[cpt-2]=strdup(commande);
+			free(commande);
+			commande=strdup(s);
+			pipe=strchr(commande,'|');
+			if(pipe!=NULL){
+				s=strdup(pipe+2);
+			}
+		}
+		commandes[cpt-1]=strdup(s);
+		free(s);
+	}
+	else{
+		commandes[0]=malloc(strlen(commande)*sizeof(char));
+		strcpy(commandes[0],commande);
+	}
+	for(int i=0;i<cpt;i++){
+		printf("commandes[%d]: %s\n",i,commandes[i]);
+	}
+	return cpt;
+}
+
+int cpt_espacef(char* commande,ssize_t taille){
+	int cpt_espace=0;
+	char c;
+	for(int i=0;i<taille;i++){
+		c=commande[i];
+		if(isspace(c)){
+			cpt_espace++;
+		}
+	}
+	return cpt_espace;
+}
+
+
+void initialize_n_process(process* first,char** commandes,int cpt_commandes){
+	process *p=first;
+	ssize_t taille;
+	for(int i=0;i<cpt_commandes;i++){
+		taille=strlen(commandes[i]);
+		printf("process %d: command: %s\n",i,commandes[i]);
+		initialize_process(p,commandes[i],cpt_espacef(commandes[i],taille),taille);
+		p=p->next;
+		p=malloc(sizeof(process));
+	}
+}
+
+void exec_n_process(job* j,process* p,char** commandes,int cpt_commandes){
+	char *commande;
+	ssize_t taille;
+	int cpt_espace;
+	for(int i=0;i<cpt_commandes;i++){
+		commande=strdup(commandes[i]);
+		taille=strlen(commande);
+		cpt_espace=cpt_espacef(commande,taille);
+		if (strcmp("exit",p->argv[0])==0){
+			exit(0);
+		}
+		else if (strcmp("cd",p->argv[0])==0){
+			chdir(p->argv[1]);
+		}
+		else{
+			j=malloc(sizeof(job));
+			int t_entree=0;
+			int t_sortie=0;
+			int t_sortie_append=0;
+			test_chevron(p->argv,cpt_espace,&t_entree,&t_sortie,&t_sortie_append);
+			printf("t_entree: %d, t_sortie: %d\n",t_entree,t_sortie);
+			if (t_entree==0 && t_sortie==0 && t_sortie_append==0){
+				initialize_job(j,commande,p,STDIN_FILENO,STDOUT_FILENO);
+			}
+			else if(t_sortie==0 && t_sortie_append==0){
+				printf("e\n");
+				p->argv[t_entree]=NULL;
+				initialize_job(j,commande,p,open(p->argv[t_entree+1],O_RDONLY),STDOUT_FILENO);
+			}
+			else if(t_entree==0){
+				printf("s\n");
+				p->argv[t_sortie]=NULL;
+				if(t_sortie_append==0){
+					initialize_job(j,commande,p,STDIN_FILENO,open(p->argv[t_sortie+1],O_WRONLY | O_CREAT,0644));
+				}
+				else{
+					printf("a\n");
+					initialize_job(j,commande,p,STDIN_FILENO,open(p->argv[t_sortie_append+1], O_WRONLY | O_APPEND ));
+				}
+			}
+			else{
+				if(t_sortie_append==0){
+					int i=0;
+					if(t_entree > t_sortie){
+						i=t_sortie;
+					}
+					else{
+						i=t_entree;
+					}
+					p->argv[i]=NULL;
+					initialize_job(j,commande,p,open(p->argv[t_entree+1],O_RDONLY),open(p->argv[t_sortie+1],O_WRONLY | O_CREAT,0644));
+				}
+				else{
+					int i=0;
+					if(t_entree > t_sortie_append){
+						i=t_sortie_append;
+					}
+					else{
+						i=t_entree;
+					}
+					p->argv[i]=NULL;
+					initialize_job(j,commande,p,open(p->argv[t_entree+1],O_RDONLY),open(p->argv[t_sortie_append+1], O_WRONLY | O_APPEND));
+				}
+			}
+			launch_job(j,1);
+			j=j->next;
+		}
+		free(commande);
+	}
+
+
+}
+
+
 int main(int argc,char** argv) {
 	init_shell();
 	job* j=first_job;
 	while(1){
 		char* commande="";
+		char** commandes=malloc(sizeof(char*));
 		size_t taille_buf=0;
 		ssize_t taille=getline(&commande,&taille_buf,stdin);
-		int cpt_espace=0;
-		char c;
-		for(int i=0;i<taille;i++){
-			c=commande[i];
-			if(isspace(c)){
-				cpt_espace++;
-			}
-		}
+		int cpt_commandes=coupe_pipe(commande,commandes);
 		process* p=malloc(sizeof(process));
-		initialize_process(p,commande,cpt_espace,taille);
-		printf("nb bloc: %d\n",cpt_espace);
-
-		if (strcmp("exit",p->argv[0])==0){
+		initialize_n_process(p,commandes,cpt_commandes);
+		exec_n_process(j,p,commandes,cpt_commandes);
+		/*if (strcmp("exit",p->argv[0])==0){
 			exit(0);
 		}else if (strcmp("cd",p->argv[0])==0){
 			chdir(p->argv[1]);
@@ -488,8 +615,8 @@ int main(int argc,char** argv) {
 			}
 			launch_job(j,1);
 			j=j->next;
-		}
-		int cpt=0;
+		}*/
+		/*int cpt=0;
 		for(int i=0;i<taille;i++){
 			c=commande[i];
 			if (isspace(c)){
@@ -497,7 +624,7 @@ int main(int argc,char** argv) {
 				cpt++;
 			}
 		}
-		free(commande);
+		free(commande);*/
 		
 	}
 	return 0;
