@@ -171,10 +171,8 @@ void launch_job (job *j, int foreground){
 
 		/* Fork the child processes.  */
 		pid = fork ();
-		if (pid == 0){ /* This is the child process.  */
-			printf("launch process %s\n",p->argv[0]);
+		if (pid == 0) /* This is the child process.  */
 			launch_process (p, j->pgid, infile,outfile, j->stderr, foreground);
-		}
 		else if (pid < 0){
 			/* The fork failed.  */
 			perror ("fork");
@@ -476,7 +474,11 @@ void initialize_n_process(process* first,char** commandes,int cpt_commandes){
 		p->next=malloc(sizeof(process));
 		p=p->next;
 	}
-	printf("first: %s\n",first->argv[0]);
+	p=NULL;
+	free(p);
+	if(first->next){
+		printf("first: %s, i:%d\n",first->argv[0],cpt_commandes);
+	}
 }
 
 
