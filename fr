@@ -1,0 +1,16 @@
+total 152
+-rwxrwxrwx 1 julian julian   412 Jun 13 14:29 Makefile
+-rwxrwxrwx 1 julian julian  4496 Jun 13 14:29 cp.c
+-rwxrwxrwx 1 julian julian   262 Jun 13 14:29 cp.h
+-rw-r--r-- 1 julian julian 11872 Jun 13 14:51 cp.o
+-rw-r--r-- 1 julian julian   747 Jun 13 16:12 f
+-rw-r--r-- 1 julian julian   685 Jun 13 16:44 fgh
+-rw-r--r-- 1 julian julian   747 Jun 13 16:06 res.txt
+-rwxr-xr-x 1 julian julian 35896 Jun 13 16:48 shell
+-rwxrwxrwx 1 julian julian 12806 Jun 13 16:48 shell.c
+-rwxrwxrwx 1 julian julian  1871 Jun 10 08:56 shell.h
+-rw-r--r-- 1 julian julian 28248 Jun 13 16:48 shell.o
+drwxrwxrwx 1 julian julian  4096 Jun 10 10:20 tefgh
+--wxr----T 1 julian julian    81 Jun 13 16:46 tes
+-rw-r--r-- 1 julian julian     0 Jun 13 16:48 test
+-rw-r--r-- 1 julian julian     0 Jun 13 16:22 wc
