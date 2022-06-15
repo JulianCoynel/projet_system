@@ -168,7 +168,6 @@ void launch_job (job *j, int foreground){
 			outfile = mypipe[1];
 		}
 		else outfile = j->stdout;
-
 		/* Fork the child processes.  */
 		pid = fork ();
 		if (pid == 0) /* This is the child process.  */
@@ -421,7 +420,6 @@ int coupe_pipe(char* commande,char **commandes){
 	int cpt=1;
 	if(pipe!=NULL){
 		char* s=strdup(pipe+2);
-		printf("commande %d: %s,%s\n",cpt-1,commande,s);
 		while(pipe!=NULL){
 			*pipe='\0';
 			cpt++;
@@ -463,22 +461,18 @@ int cpt_espacef(char* commande,ssize_t taille){
 
 void initialize_n_process(process* first,char** commandes,int cpt_commandes){
 	process *p=first;
+	process *a=p;
 	ssize_t taille;
 	for(int i=0;i<cpt_commandes;i++){
 		taille=strlen(commandes[i]);
 		printf("process %d: command: %s\n",i,commandes[i]);
 		initialize_process(p,commandes[i],cpt_espacef(commandes[i],taille),taille);
-		if(p){
-			printf("com: %s\n",p->argv[0]);
-		}
+		a=p;
 		p->next=malloc(sizeof(process));
 		p=p->next;
 	}
-	p=NULL;
+	a->next=NULL;
 	free(p);
-	if(first->next){
-		printf("first: %s, i:%d\n",first->argv[0],cpt_commandes);
-	}
 }
 
 
