@@ -21,6 +21,24 @@ int shell_is_interactive;
 /* The active jobs are linked into a list.  This is its head.   */
         job *first_job =NULL;
 
+void free_process(process* p)
+{
+	//On free de manière récursive tous les process
+    if (p->next) free_process(p->next);
+    char** a = p->argv;
+    while (*a) free(*(a++));
+    free(p->argv);
+    free(p);
+}
+
+void free_job(job* j)
+{
+	//On free le job et ses process
+    if (!j) return;
+    if (j->first_process) free_process(j->first_process);
+    free(j);
+}
+
 /* Find the active job with the indicated pgid.  */
 job *
 find_job (pid_t pgid)
@@ -72,9 +90,6 @@ job_is_completed (job *j)
 				      return 0;
 	      return 1;
 }
-
-
-
 
 /* Make sure the shell is running interactively as the foreground job
  *    before proceeding. */
@@ -313,7 +328,7 @@ void do_job_notification (void){
 			format_job_info (j, "completed");
 			if (jlast) jlast->next = jnext;
 			else first_job = jnext;
-			//free_job (j);
+			free_job (j);
 		}
 
 		/* Notify the user about stopped jobs,
@@ -414,7 +429,6 @@ void test_chevron(char** argv,int taille,int* t_entree,int* t_sortie,int* t_sort
 	free(s);
 }
 
-
 int coupe_pipe(char* commande,char **commandes){
 	char* pipe=strchr(commande,'|');
 	int cpt=1;
@@ -458,7 +472,6 @@ int cpt_espacef(char* commande,ssize_t taille){
 	return cpt_espace;
 }
 
-
 void initialize_n_process(process* first,char** commandes,int cpt_commandes){
 	process *p=first;
 	process *a=p;
@@ -475,11 +488,22 @@ void initialize_n_process(process* first,char** commandes,int cpt_commandes){
 	free(p);
 }
 
+int is_background(char * commande,int taille){
+	printf("commande[taille-2] : %c\n",commande[taille-2]);
+	if ('&'==commande[taille-2]){
+		//on envoie en background
+		return 0;
+	}
+	//on envoie en foreground
+	return 1;
+}
 
 int main(int argc,char** argv) {
 	init_shell();
 	job* j=first_job;
 	while(1){
+
+		//On parse la commande pour les pipes / redirections
 		char* commande="";
 		char** commandes=malloc(sizeof(char*));
 		size_t taille_buf=0;
@@ -490,13 +514,20 @@ int main(int argc,char** argv) {
 		commande=strdup(commandes[0]);
 		taille=strlen(commande);
 		int cpt_espace=cpt_espacef(commande,taille);
+
+		//on regarde le type de fonction demandé
 		if (strcmp("exit",p->argv[0])==0){
-			exit(0);
+			free_job(j);
+			return(0);
 		}
 		else if (strcmp("cd",p->argv[0])==0){
 			chdir(p->argv[1]);
 		}
+		else if (strcmp("cp",p->argv[0])==0){
+			cp_main(cpt_espace,p->argv);
+		}
 		else{
+			//Commande classique, on regarde s'il y a redirection
 			j=malloc(sizeof(job));
 			int t_entree=0;
 			int t_sortie=0;
@@ -546,7 +577,9 @@ int main(int argc,char** argv) {
 					initialize_job(j,commande,p,open(p->argv[t_entree+1],O_RDONLY),open(p->argv[t_sortie_append+1], O_WRONLY | O_APPEND));
 				}
 			}
-			launch_job(j,1);
+			//On launch le job en regardant si on le met en background ou foreground
+			launch_job(j,is_background(commande,taille));
+			do_job_notification();
 			j=j->next;
 		}	
 	}

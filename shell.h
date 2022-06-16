@@ -28,8 +28,20 @@ typedef struct job
 	int stdin, stdout, stderr;  /* standard i/o channels */
 } job;
 
+/* On free de manière récursive tous les process  */
+void free_process(process* p);
+
+/* On free le job et tous ses process */
+void free_job(job* j);
+
 /* Find the active job with the indicated pgid.  */
 job *find_job (pid_t pgid);
+
+/* Permet l'initialisation d'un process */
+void initialize_process(process* p,char* commande,int cpt_espace,ssize_t taille);
+
+/* Permet l'initialisation d'un job */
+void initialize_job(job* job,char* commande,process* p,int stdin,int stdout);
 
 /* Return true if all processes in the job have stopped or completed.  */
 int job_is_stopped (job *j);
@@ -61,6 +73,23 @@ void mark_job_as_running (job *j);
 
 void continue_job (job *j, int foreground);
 
+/* Permet d'avoir la taille du plus grand mot de la commande pour le malloc */
+int taille_max(char* commande,ssize_t taille);
+
+/* Permet l'allocation d'un process */
 void alloc_process(process* p,char* commande,ssize_t taille);
 
+/* Permet de tester s'il y a redirection et si oui laquelle */
+void test_chevron(char** argv,int taille,int* t_entree,int* t_sortie,int* t_sortie_append);
 
+/* Permet de parse la commande en fonction des pipes */
+int coupe_pipe(char* commande,char **commandes);
+
+/* Permet de compter les espaces d'un commande */
+int cpt_espacef(char* commande,ssize_t taille);
+
+/* Permet d'initialiser n process en cas de pipe */
+void initialize_n_process(process* first,char** commandes,int cpt_commandes);
+
+/* Permet de savoir s'il faut mettre en background ou foreground */
+int is_background(char * commande,int taille);
