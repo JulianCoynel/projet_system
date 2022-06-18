@@ -492,6 +492,7 @@ int is_background(char * commande,int taille){
 	printf("commande[taille-2] : %c\n",commande[taille-2]);
 	if ('&'==commande[taille-2]){
 		//on envoie en background
+		commande[taille-2] = '\0';
 		return 0;
 	}
 	//on envoie en foreground
@@ -508,6 +509,7 @@ int main(int argc,char** argv) {
 		char** commandes=malloc(sizeof(char*));
 		size_t taille_buf=0;
 		ssize_t taille=getline(&commande,&taille_buf,stdin);
+		int background = is_background(commande,taille);
 		int cpt_commandes=coupe_pipe(commande,commandes);
 		process* p=malloc(sizeof(process));
 		initialize_n_process(p,commandes,cpt_commandes);
@@ -578,7 +580,7 @@ int main(int argc,char** argv) {
 				}
 			}
 			//On launch le job en regardant si on le met en background ou foreground
-			launch_job(j,is_background(commande,taille));
+			launch_job(j,background);
 			do_job_notification();
 			j=j->next;
 		}	
