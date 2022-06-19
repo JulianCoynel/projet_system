@@ -409,24 +409,94 @@ void alloc_process(process* p,char* commande,ssize_t taille){
 	free(s);
 }
 
-void test_chevron(char** argv,int taille,int* t_entree,int* t_sortie,int* t_sortie_append){
+void test_chevron(process* p,int* t_entree,int* t_sortie,int* t_sortie_append,int* open_entree,int* open_sortie){
 	char *s;
-	s=malloc(500*sizeof(char));
-	for(int i=1;i<taille-1;i++){
-		strcpy(s,argv[i]);
-		if(strcmp("<",s)==0){
-			*t_entree=i;
+	int flag=0;
+	int sortie=0;
+	int h=0;
+	int i;
+	int taille;
+	while(p && (sortie==0 && flag==0)){
+		s=malloc(500*sizeof(char));
+		i=0;
+		h=0;
+		taille=sizeof(p->argv);
+		printf("%d",taille);
+		while(p->argv[i]!=NULL && (sortie==0 && flag==0)){
+			strcpy(s,p->argv[i]);
+			printf("s: %s\n",s);
+			if(strcmp("<",s)==0){
+				h=1;
+				if (flag==0){
+					*t_entree=i;
+					flag=1;
+				}
+			}
+			if(strcmp(">",s)==0){
+				h=1;
+				if (sortie==0){
+					*t_sortie=i;
+					sortie=1;
+				}
+			}
+			if(strcmp(">>",s)==0){
+				h=1;
+				if(sortie==0){
+					*t_sortie_append=i;
+					sortie=1;
+				}
+			}
+			free(s);
+			s=malloc(500*sizeof(char));
+			i++;
 		}
-		if(strcmp(">",s)==0){
-			*t_sortie=i;
-		}
-		if(strcmp(">>",s)==0){
-			*t_sortie_append=i;
+		if(h==1){
+			int e=*t_entree;
+			int s=*t_sortie;
+			int a=*t_sortie_append;
+			int f=0;
+			if(s==0 && a==0){
+				*open_entree=open(p->argv[e+1],O_RDONLY);
+				f=e;
+			}
+			else if(e==0){
+				if(a==0){
+					*open_sortie=open(p->argv[s+1],O_WRONLY | O_CREAT,0644);
+					f=s;
+				}
+				else{
+					*open_sortie=open(p->argv[a+1], O_WRONLY | O_APPEND );
+					f=a;
+				}
+			}
+			else{
+				if(a==0){
+					if(e > s){
+						f=s;
+					}
+					else{
+						f=e;
+					}
+					*open_entree=open(p->argv[e+1],O_RDONLY);
+					*open_sortie=open(p->argv[s+1],O_WRONLY | O_CREAT,0644);
+				}
+				else{
+					if(e > a){
+						f=a;
+					}
+					else{
+						f=e;
+					}
+					*open_entree=open(p->argv[s+1],O_RDONLY);
+					*open_sortie=open(p->argv[a+1], O_WRONLY | O_APPEND);
+				}
+			}
+			p->argv[f]=NULL;
+
 		}
 		free(s);
-		s=malloc(500*sizeof(char));
+		p=p->next;
 	}
-	free(s);
 }
 
 int coupe_pipe(char* commande,char **commandes){
@@ -534,50 +604,23 @@ int main(int argc,char** argv) {
 			int t_entree=0;
 			int t_sortie=0;
 			int t_sortie_append=0;
-			test_chevron(p->argv,cpt_espace,&t_entree,&t_sortie,&t_sortie_append);
+			int open_entree=0;
+			int open_sortie=0;
+			test_chevron(p,&t_entree,&t_sortie,&t_sortie_append,&open_entree,&open_sortie);
 			printf("t_entree: %d, t_sortie: %d\n",t_entree,t_sortie);
 			if (t_entree==0 && t_sortie==0 && t_sortie_append==0){
 				initialize_job(j,commande,p,STDIN_FILENO,STDOUT_FILENO);
 			}
 			else if(t_sortie==0 && t_sortie_append==0){
 				printf("e\n");
-				p->argv[t_entree]=NULL;
-				initialize_job(j,commande,p,open(p->argv[t_entree+1],O_RDONLY),STDOUT_FILENO);
+				initialize_job(j,commande,p,open_entree,STDOUT_FILENO);
 			}
 			else if(t_entree==0){
 				printf("s\n");
-				p->argv[t_sortie]=NULL;
-				if(t_sortie_append==0){
-					initialize_job(j,commande,p,STDIN_FILENO,open(p->argv[t_sortie+1],O_WRONLY | O_CREAT,0644));
-				}
-				else{
-					printf("a\n");
-					initialize_job(j,commande,p,STDIN_FILENO,open(p->argv[t_sortie_append+1], O_WRONLY | O_APPEND ));
-				}
+				initialize_job(j,commande,p,STDIN_FILENO,open_sortie);
 			}
 			else{
-				if(t_sortie_append==0){
-					int i=0;
-					if(t_entree > t_sortie){
-						i=t_sortie;
-					}
-					else{
-						i=t_entree;
-					}
-					p->argv[i]=NULL;
-					initialize_job(j,commande,p,open(p->argv[t_entree+1],O_RDONLY),open(p->argv[t_sortie+1],O_WRONLY | O_CREAT,0644));
-				}
-				else{
-					int i=0;
-					if(t_entree > t_sortie_append){
-						i=t_sortie_append;
-					}
-					else{
-						i=t_entree;
-					}
-					p->argv[i]=NULL;
-					initialize_job(j,commande,p,open(p->argv[t_entree+1],O_RDONLY),open(p->argv[t_sortie_append+1], O_WRONLY | O_APPEND));
-				}
+				initialize_job(j,commande,p,open_entree,open_sortie);
 			}
 			//On launch le job en regardant si on le met en background ou foreground
 			launch_job(j,background);

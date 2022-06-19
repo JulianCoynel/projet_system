@@ -80,7 +80,7 @@ int taille_max(char* commande,ssize_t taille);
 void alloc_process(process* p,char* commande,ssize_t taille);
 
 /* Permet de tester s'il y a redirection et si oui laquelle */
-void test_chevron(char** argv,int taille,int* t_entree,int* t_sortie,int* t_sortie_append);
+void test_chevron(process* p,int* t_entree,int* t_sortie,int* t_sortie_append,int* open_entree,int* open_sortie);
 
 /* Permet de parse la commande en fonction des pipes */
 int coupe_pipe(char* commande,char **commandes);
