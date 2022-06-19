@@ -39,6 +39,12 @@ void free_job(job* j)
     free(j);
 }
 
+void free_fields(char ** commandes){
+	for(int i = 0; i < sizeof(commandes)/sizeof(char*); i++)
+        free(commandes[i]);
+    free(commandes);
+}
+
 /* Find the active job with the indicated pgid.  */
 job *
 find_job (pid_t pgid)
@@ -53,7 +59,7 @@ find_job (pid_t pgid)
 
 void initialize_process(process* p,char* commande,int cpt_espace,ssize_t taille){
 	p->next=NULL;
-	p->argv=malloc(1+cpt_espace*sizeof(char*));
+	p->argv=malloc(8+cpt_espace*sizeof(char*));
 	alloc_process(p,commande,taille);
 	p->argv[cpt_espace]=NULL;
 }
@@ -385,17 +391,17 @@ void alloc_process(process* p,char* commande,ssize_t taille){
 	char c;
 	char *s;
 	int t_max=taille_max(commande,taille);
-	printf("tmax: %d\n",t_max);
-	s=malloc(t_max*sizeof(char));
+	//printf("tmax: %d\n",t_max);
+	s=malloc(t_max*sizeof(char)+1);
 	for(int i=0;i<taille;i++){
 		c=commande[i];
 		if (isspace(c)){
 			p->argv[cpt]=malloc(sizeof(s));
 			strcpy(p->argv[cpt],s);
-			printf("argv[%d]: %s\n",cpt,p->argv[cpt]);
+			//printf("argv[%d]: %s\n",cpt,p->argv[cpt]);
 			cpt++;
 			free(s);
-			s=malloc(t_max*sizeof(char));
+			s=malloc(t_max*sizeof(char)+1);
 			cpt2=-1;
 			s[0]='\0';
 		}
@@ -438,9 +444,8 @@ int coupe_pipe(char* commande,char **commandes){
 			*pipe='\0';
 			cpt++;
 			commandes=realloc(commandes,cpt*sizeof(char*));
-			printf("commande %d: %s,%s\n",cpt-2,commande,s);
+			//printf("commande %d: %s,%s\n",cpt-2,commande,s);
 			commandes[cpt-2]=strdup(commande);
-			free(commande);
 			commande=strdup(s);
 			pipe=strchr(commande,'|');
 			if(pipe!=NULL){
@@ -451,11 +456,8 @@ int coupe_pipe(char* commande,char **commandes){
 		free(s);
 	}
 	else{
-		commandes[0]=malloc(strlen(commande)*sizeof(char));
+		commandes[0]=malloc(strlen(commande)*sizeof(char)+1);
 		strcpy(commandes[0],commande);
-	}
-	for(int i=0;i<cpt;i++){
-		printf("commandes[%d]: %s\n",i,commandes[i]);
 	}
 	return cpt;
 }
@@ -478,7 +480,7 @@ void initialize_n_process(process* first,char** commandes,int cpt_commandes){
 	ssize_t taille;
 	for(int i=0;i<cpt_commandes;i++){
 		taille=strlen(commandes[i]);
-		printf("process %d: command: %s\n",i,commandes[i]);
+		//printf("process %d: command: %s\n",i,commandes[i]);
 		initialize_process(p,commandes[i],cpt_espacef(commandes[i],taille),taille);
 		a=p;
 		p->next=malloc(sizeof(process));
@@ -489,7 +491,7 @@ void initialize_n_process(process* first,char** commandes,int cpt_commandes){
 }
 
 int is_background(char * commande,int taille){
-	printf("commande[taille-2] : %c\n",commande[taille-2]);
+	//printf("commande[taille-2] : %c\n",commande[taille-2]);
 	if ('&'==commande[taille-2]){
 		//on envoie en background
 		commande[taille-2] = '\0';
@@ -505,7 +507,7 @@ int main(int argc,char** argv) {
 	while(1){
 
 		//On parse la commande pour les pipes / redirections
-		char* commande="";
+		char* commande=NULL;
 		char** commandes=malloc(sizeof(char*));
 		size_t taille_buf=0;
 		ssize_t taille=getline(&commande,&taille_buf,stdin);
@@ -513,13 +515,21 @@ int main(int argc,char** argv) {
 		int cpt_commandes=coupe_pipe(commande,commandes);
 		process* p=malloc(sizeof(process));
 		initialize_n_process(p,commandes,cpt_commandes);
+		//Ici on free le getline pour ne pas avoir de fuite de mémoire
+		free(commande);
 		commande=strdup(commandes[0]);
 		taille=strlen(commande);
 		int cpt_espace=cpt_espacef(commande,taille);
+		//On free commandes ici pour ne pas avoir de fuite de mémoire
+		free_fields(commandes);
 
 		//on regarde le type de fonction demandé
 		if (strcmp("exit",p->argv[0])==0){
+			//On free tout et on return
 			free_job(j);
+			free_fields(p->argv);
+			free(p);
+			free(commande);
 			return(0);
 		}
 		else if (strcmp("cd",p->argv[0])==0){
@@ -535,23 +545,23 @@ int main(int argc,char** argv) {
 			int t_sortie=0;
 			int t_sortie_append=0;
 			test_chevron(p->argv,cpt_espace,&t_entree,&t_sortie,&t_sortie_append);
-			printf("t_entree: %d, t_sortie: %d\n",t_entree,t_sortie);
+			//printf("t_entree: %d, t_sortie: %d\n",t_entree,t_sortie);
 			if (t_entree==0 && t_sortie==0 && t_sortie_append==0){
 				initialize_job(j,commande,p,STDIN_FILENO,STDOUT_FILENO);
 			}
 			else if(t_sortie==0 && t_sortie_append==0){
-				printf("e\n");
+				//Entrée
 				p->argv[t_entree]=NULL;
 				initialize_job(j,commande,p,open(p->argv[t_entree+1],O_RDONLY),STDOUT_FILENO);
 			}
 			else if(t_entree==0){
-				printf("s\n");
+				//Sortie
 				p->argv[t_sortie]=NULL;
 				if(t_sortie_append==0){
 					initialize_job(j,commande,p,STDIN_FILENO,open(p->argv[t_sortie+1],O_WRONLY | O_CREAT,0644));
 				}
 				else{
-					printf("a\n");
+					//Append fin fichier
 					initialize_job(j,commande,p,STDIN_FILENO,open(p->argv[t_sortie_append+1], O_WRONLY | O_APPEND ));
 				}
 			}
@@ -580,9 +590,11 @@ int main(int argc,char** argv) {
 				}
 			}
 			//On launch le job en regardant si on le met en background ou foreground
+			update_status();
 			launch_job(j,background);
 			do_job_notification();
 			j=j->next;
+			free(commande);
 		}	
 	}
 	return 0;
