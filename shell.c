@@ -422,13 +422,13 @@ void test_chevron(process* p,int* t_entree,int* t_sortie,int* t_sortie_append,in
 	int h=0;
 	int i;
 	int taille;
-	while(p && (sortie==0 && flag==0)){
+	while(p && (sortie==0 || flag==0)){
 		s=malloc(500*sizeof(char));
 		i=0;
 		h=0;
 		taille=sizeof(p->argv);
 		printf("%d",taille);
-		while(p->argv[i]!=NULL && (sortie==0 && flag==0)){
+		while(p->argv[i]!=NULL && (sortie==0 || flag==0)){
 			strcpy(s,p->argv[i]);
 			printf("s: %s\n",s);
 			if(strcmp("<",s)==0){
@@ -493,7 +493,7 @@ void test_chevron(process* p,int* t_entree,int* t_sortie,int* t_sortie_append,in
 					else{
 						f=e;
 					}
-					*open_entree=open(p->argv[s+1],O_RDONLY);
+					*open_entree=open(p->argv[e+1],O_RDONLY);
 					*open_sortie=open(p->argv[a+1], O_WRONLY | O_APPEND);
 				}
 			}
@@ -617,7 +617,7 @@ int main(int argc,char** argv) {
 			int open_entree=0;
 			int open_sortie=0;
 			test_chevron(p,&t_entree,&t_sortie,&t_sortie_append,&open_entree,&open_sortie);
-			printf("t_entree: %d, t_sortie: %d\n",t_entree,t_sortie);
+			printf("t_entree: %d, t_sortie: %d, t_append: %d\n",t_entree,t_sortie,t_sortie_append);
 			if (t_entree==0 && t_sortie==0 && t_sortie_append==0){
 				initialize_job(j,commande,p,STDIN_FILENO,STDOUT_FILENO);
 			}
@@ -630,6 +630,7 @@ int main(int argc,char** argv) {
 				initialize_job(j,commande,p,STDIN_FILENO,open_sortie);
 			}
 			else{
+				printf("e et s\n");
 				initialize_job(j,commande,p,open_entree,open_sortie);
 			}
 			//On launch le job en regardant si on le met en background ou foreground
